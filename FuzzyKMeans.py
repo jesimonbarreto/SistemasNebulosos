@@ -1,7 +1,5 @@
 import numpy as np
 import pandas as pd
-from matplotlib import pyplot as plt
-# from collections import defaultdict
 from scipy.io import loadmat  # this is the SciPy module that loads mat-files
 from scipy.spatial import distance
 
@@ -73,10 +71,13 @@ def update_u(U, X, centroids, m):
             U[i][j] = 1 / (dist_ij / dist_kj ** (2 / (m - 1)))
 
 
-# x: dataset composto de pontos (x,y)
+# x: dataset composto de pontos no plano cartesiano (número de dimensões arbitrário)
 # n_centroides: número desejado de clusters
 # m: exponente de peso
 def fuzzy_k_means(x, n_centroides, m):
+    if m <= 1:
+        raise Exception(" 'm' should be greater than 1")
+
     u = generate_u(x.shape[1], n_centroides)
     cost = 1
     centroids = []
@@ -94,7 +95,7 @@ def fuzzy_k_means(x, n_centroides, m):
 
 def main():
     data = import_data()
-    result = fuzzy_k_means(data, 5, 2)
+    result = fuzzy_k_means(data, 5, 1)
 
     print(result['centroids'])
     print(result['n_iterations'])
