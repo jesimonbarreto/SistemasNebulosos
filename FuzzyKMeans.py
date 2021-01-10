@@ -26,14 +26,14 @@ def generate_u(k: int, n: int):
 
 # returns array of K centroids
 def calc_centroids(U, X, m):
-    upper_sum = 0
-    lower_sum = 0
     centroids = []
 
     n_centroids = U.shape[0]
     n_features = U.shape[1]
 
     for i in range(n_centroids):
+        upper_sum = 0
+        lower_sum = 0
         for j in range(n_features):
             upper_sum += (U[i][j] ** m) * X[:, j]
             lower_sum += (U[i][j] ** m)
@@ -59,8 +59,6 @@ def calc_cost(U, X, centroids, m):
 def update_u(U, X, centroids, m):
     n_centroids = U.shape[0]
     n_features = U.shape[1]
-
-    cost = 0
 
     for i in range(n_centroids):
         for j in range(n_features):
@@ -95,7 +93,7 @@ def fuzzy_k_means(x, n_centroides, m):
 
 def main():
     data = import_data()
-    result = fuzzy_k_means(data, 5, 1)
+    result = fuzzy_k_means(data, 5, 2)
 
     print(result['centroids'])
     print(result['n_iterations'])
