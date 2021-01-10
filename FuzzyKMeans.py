@@ -2,10 +2,12 @@ import numpy as np
 import pandas as pd
 from scipy.io import loadmat  # this is the SciPy module that loads mat-files
 from scipy.spatial import distance
+import copy
+import matplotlib.pyplot as plt
 
 
-# Jesimon, mano, um detalhe importante: segui a orientação de U que o livro segue.
-# Ou seja, matrix c x n (c sendo o número de centroides e n sendo o número de features)
+#Variavel para controle de plot dos resuldos e prints durante o código
+debug = False
 
 # data (NxM) = DataFrame a ser clusterizado N observacoes e M features
 def import_data():
@@ -16,8 +18,13 @@ def import_data():
     nfeatures = data.shape[1]
     print('Numero de atributos (features): ', nfeatures)
 
-    return data.values.transpose()
+    return data.values#.transpose()
 
+def plot_samples(x, u, centroids):
+    y_kmeans = np.argmax(u, axis=1)
+    plt.scatter(x[:, 0], x[:, 1], c=y_kmeans, s=50, cmap='viridis')
+    plt.scatter(centroids[:, 0], centroids[:, 1], c='black', s=200, alpha=0.5)
+    plt.show()
 
 # n = number of columns, k = number of rows
 def generate_u(k: int, n: int):
@@ -26,76 +33,84 @@ def generate_u(k: int, n: int):
 
 # returns array of K centroids
 def calc_centroids(U, X, m):
-    upper_sum = 0
-    lower_sum = 0
     centroids = []
 
-    n_centroids = U.shape[0]
-    n_features = U.shape[1]
+    n_centroids = U.shape[1]
+    n_samples = U.shape[0]
 
     for i in range(n_centroids):
-        for j in range(n_features):
-            upper_sum += (U[i][j] ** m) * X[:, j]
-            lower_sum += (U[i][j] ** m)
-        centroids.append(upper_sum / lower_sum)
+        u_i = U[:,i] 
+        part = u_i ** m
+        features_cent = []
+        n_feat_cent = int(X.shape[1])
+        
+        for feat in range(n_feat_cent):
+            feat_j = np.sum((part*X[:,feat]))/np.sum(part) 
+            features_cent.append(feat_j)
+        centroids.append(features_cent)
 
+    centroids = np.array(centroids)
     return centroids
 
 
 def calc_cost(U, X, centroids, m):
-    n_centroids = U.shape[0]
-    n_features = U.shape[1]
+    n_centroids = U.shape[1]
+    n_samples = U.shape[0]
 
     cost = 0
 
     for i in range(n_centroids):
-        for j in range(n_features):
-            dist = distance.euclidean(centroids[i], X[:, j])
-            cost += (U[i][j] ** m) * (dist ** 2)
+        for j in range(n_samples):
+            dist = distance.euclidean(centroids[i], X[j,:])
+            cost += (U[j][i] ** m) * (dist ** 2)
 
     return cost
 
 
 def update_u(U, X, centroids, m):
-    n_centroids = U.shape[0]
-    n_features = U.shape[1]
+    n_centroids = U.shape[1]
+    n_samples = U.shape[0]
 
-    cost = 0
+    U_new = copy.copy(U)
 
-    for i in range(n_centroids):
-        for j in range(n_features):
-            dist_kj = 0
-            for k in range(n_centroids):
-                dist_kj += distance.euclidean(centroids[k], X[:, j])
-            dist_ij = distance.euclidean(centroids[i], X[:, j])
-            U[i][j] = 1 / (dist_ij / dist_kj ** (2 / (m - 1)))
-
+    for j in range(n_samples):
+        dist_kj = 0
+        for k in range(n_centroids):
+            dist_kj += distance.euclidean(centroids[k], X[j,:])
+        for i in range(n_centroids):
+            dist_ij = distance.euclidean(centroids[i], X[j,:])
+            U_new[j][i] = 1 / (dist_ij / dist_kj ** (2 / (m - 1)))
+    
+    return U_new
 
 # x: dataset composto de pontos no plano cartesiano (número de dimensões arbitrário)
 # n_centroides: número desejado de clusters
 # m: exponente de peso
-def fuzzy_k_means(x, n_centroides, m):
+def fuzzy_k_means(x, n_centroides, m, threshold = 0.001, max_inter = 10):
     if m <= 1:
         raise Exception(" 'm' should be greater than 1")
 
-    u = generate_u(x.shape[1], n_centroides)
+    u = generate_u(n_centroides, x.shape[0])
     cost = 1
     centroids = []
     iterations = 0
 
-    while cost > 0.001:
+    while cost > threshold and iterations < max_inter:
         centroids = calc_centroids(u, x, m)
         cost = calc_cost(u, x, centroids, m)
-        update_u(u, x, centroids, m)
+        u = update_u(u, x, centroids, m)
         iterations += 1
         print(cost)
-
+        if debug:
+            plot_samples(x, u, centroids)
+        
+    
     return {'centroids': centroids, 'u_matrix': u, 'n_iterations': iterations}
 
 
 def main():
     data = import_data()
-    result = fuzzy_k_means(data, 5, 1)
+    result = fuzzy_k_means(data, 4, 2, 0.1, 20)
 
     print(result['centroids'])
     print(result['n_iterations'])
