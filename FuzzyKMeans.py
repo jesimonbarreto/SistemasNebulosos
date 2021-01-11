@@ -20,6 +20,9 @@ def import_data():
 
     return data.values#.transpose()
 
+def reduc_samples(X,n_samples=10):
+    return X[:n_samples,:]
+
 def plot_samples(x, u, centroids):
     y_kmeans = np.argmax(u, axis=1)
     plt.scatter(x[:, 0], x[:, 1], c=y_kmeans, s=50, cmap='viridis')
@@ -34,19 +37,19 @@ def generate_u(k: int, n: int):
 # returns array of K centroids
 def calc_centroids(U, X, m):
     centroids = []
-
     n_centroids = U.shape[1]
     n_samples = U.shape[0]
 
     for i in range(n_centroids):
         u_i = U[:,i] 
-        part = u_i ** m
+        ui_m = u_i ** m
+
         features_cent = []
         n_feat_cent = int(X.shape[1])
-        
         for feat in range(n_feat_cent):
-            feat_j = np.sum((part*X[:,feat]))/np.sum(part) 
-            features_cent.append(feat_j)
+            x_feat = X[:,feat]
+            feat_cent = np.sum((ui_m*x_feat))/np.sum(ui_m) 
+            features_cent.append(feat_cent)
         centroids.append(features_cent)
 
     centroids = np.array(centroids)
@@ -79,7 +82,10 @@ def update_u(U, X, centroids, m):
             dist_kj += distance.euclidean(centroids[k], X[j,:])
         for i in range(n_centroids):
             dist_ij = distance.euclidean(centroids[i], X[j,:])
-            U_new[j][i] = 1 / (dist_ij / dist_kj ** (2 / (m - 1)))
+            U_new[j][i] = 1 / (dist_ij / dist_kj) ** (2/(m - 1))
+        #normaliza valores entre 0 e 1 para cada amostra
+        sum_ = np.sum(U_new[j])
+        U_new[j] = U_new[j]/sum_
     
     return U_new
 
@@ -102,6 +108,8 @@ def fuzzy_k_means(x, n_centroides, m, threshold = 0.001, max_inter = 10):
         iterations += 1
         print(cost)
         if debug:
+            print('Matrix centroids: {}'.format(centroids))
+            print('Matrix U: {}'.format(u))
             plot_samples(x, u, centroids)
         
     
@@ -110,7 +118,9 @@ def fuzzy_k_means(x, n_centroides, m, threshold = 0.001, max_inter = 10):
 
 def main():
     data = import_data()
-    result = fuzzy_k_means(data, 4, 2, 0.1, 20)
+    if debug:
+        data = reduc_samples(data, n_samples=10)
+    result = fuzzy_k_means(data, 4, 2, 0.0001, 20)
 
     print(result['centroids'])
     print(result['n_iterations'])
