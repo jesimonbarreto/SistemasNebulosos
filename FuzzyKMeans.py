@@ -21,7 +21,7 @@ def import_data():
     return data.values#.transpose()
 
 def reduc_samples(X,n_samples=10):
-    return X[:n_samples,:]
+    return X[:n_samples, :]
 
 def plot_samples(x, u, centroids):
     y_kmeans = np.argmax(u, axis=1)
