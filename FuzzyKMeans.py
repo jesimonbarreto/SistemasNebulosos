@@ -117,10 +117,10 @@ def fuzzy_k_means(x, n_centroides, m, threshold = 0.001, max_inter = 10):
 
 
 def main():
-    data = import_data()
+    X = import_data()
     if debug:
-        data = reduc_samples(data, n_samples=10)
-    result = fuzzy_k_means(data, 4, 2, 0.0001, 20)
+        data = reduc_samples(X, n_samples=10)
+    result = fuzzy_k_means(X, 4, 2, 0.0001, 20)
 
     print(result['centroids'])
     print(result['n_iterations'])
